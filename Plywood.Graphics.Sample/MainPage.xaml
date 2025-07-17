@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:plywood="clr-namespace:Plywood.Graphics.Platform.Maui;assembly=Plywood.Graphics.Platform.MAUI"
+             x:Class="Plywood.Graphics.Sample.MainPage">
+
+    <plywood:PwView x:Name="rendererView"
+                             HeightRequest="400"
+                             WidthRequest="400" />
+
+</ContentPage>
