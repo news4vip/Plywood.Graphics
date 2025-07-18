@@ -3,11 +3,34 @@ using System.Numerics;
 
 namespace Plywood.Graphics
 {
+    /// <summary>
+    /// GPU コマンドの抽象基底クラス
+    /// Command Pattern を使用して描画操作を遅延実行
+    /// </summary>
     public abstract class PwCommand
     {
+        /// <summary>コマンドの作成時刻</summary>
+        public DateTime CreatedTime { get; } = DateTime.Now;
+        
+        /// <summary>コマンドの実行優先度</summary>
+        public int Priority { get; set; } = 0;
+        
+        /// <summary>
+        /// コマンドを実行
+        /// </summary>
+        /// <param name="device">実行対象のグラフィックスデバイス</param>
         public abstract void Execute(IPwGraphicsDevice device);
+        
+        /// <summary>
+        /// コマンドの妥当性を検証
+        /// </summary>
+        /// <returns>有効な場合true</returns>
+        public virtual bool IsValid() => true;
     }
     
+    /// <summary>
+    /// ビューポート設定コマンド
+    /// </summary>
     public class PwViewportCommand : PwCommand
     {
         public int X { get; }
@@ -27,30 +50,46 @@ namespace Plywood.Graphics
         {
             device.SetViewport(X, Y, Width, Height);
         }
+        
+        public override bool IsValid()
+        {
+            return Width > 0 && Height > 0;
+        }
     }
     
+    /// <summary>
+    /// レンダーパス開始コマンド
+    /// </summary>
     public class PwBeginRenderPassCommand : PwCommand
     {
         public PwRenderPass RenderPass { get; }
         
         public PwBeginRenderPassCommand(PwRenderPass renderPass)
         {
-            RenderPass = renderPass;
+            RenderPass = renderPass ?? throw new ArgumentNullException(nameof(renderPass));
         }
         
         public override void Execute(IPwGraphicsDevice device)
         {
             device.BeginRenderPass(RenderPass);
         }
+        
+        public override bool IsValid()
+        {
+            return RenderPass?.Descriptor?.IsValid() == true;
+        }
     }
     
+    /// <summary>
+    /// レンダーパス終了コマンド
+    /// </summary>
     public class PwEndRenderPassCommand : PwCommand
     {
         public PwRenderPass RenderPass { get; }
         
         public PwEndRenderPassCommand(PwRenderPass renderPass)
         {
-            RenderPass = renderPass;
+            RenderPass = renderPass ?? throw new ArgumentNullException(nameof(renderPass));
         }
         
         public override void Execute(IPwGraphicsDevice device)
@@ -59,13 +98,16 @@ namespace Plywood.Graphics
         }
     }
     
+    /// <summary>
+    /// パイプライン設定コマンド
+    /// </summary>
     public class PwSetPipelineCommand : PwCommand
     {
         public PwPipeline Pipeline { get; }
         
         public PwSetPipelineCommand(PwPipeline pipeline)
         {
-            Pipeline = pipeline;
+            Pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
         }
         
         public override void Execute(IPwGraphicsDevice device)
@@ -74,6 +116,9 @@ namespace Plywood.Graphics
         }
     }
     
+    /// <summary>
+    /// 頂点バッファ設定コマンド
+    /// </summary>
     public class PwSetVertexBufferCommand : PwCommand
     {
         public PwBuffer Buffer { get; }
@@ -81,7 +126,7 @@ namespace Plywood.Graphics
         
         public PwSetVertexBufferCommand(PwBuffer buffer, int bindingIndex)
         {
-            Buffer = buffer;
+            Buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             BindingIndex = bindingIndex;
         }
         
@@ -89,23 +134,39 @@ namespace Plywood.Graphics
         {
             device.SetVertexBuffer(Buffer, BindingIndex);
         }
+        
+        public override bool IsValid()
+        {
+            return Buffer.Usage == PwBufferUsage.Vertex || Buffer.Usage == PwBufferUsage.Instance;
+        }
     }
     
+    /// <summary>
+    /// インデックスバッファ設定コマンド
+    /// </summary>
     public class PwSetIndexBufferCommand : PwCommand
     {
         public PwBuffer Buffer { get; }
         
         public PwSetIndexBufferCommand(PwBuffer buffer)
         {
-            Buffer = buffer;
+            Buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
         }
         
         public override void Execute(IPwGraphicsDevice device)
         {
             device.SetIndexBuffer(Buffer);
         }
+        
+        public override bool IsValid()
+        {
+            return Buffer.Usage == PwBufferUsage.Index;
+        }
     }
     
+    /// <summary>
+    /// インスタンスバッファオフセット設定コマンド
+    /// </summary>
     public class PwSetInstanceBufferOffsetCommand : PwCommand
     {
         public PwBuffer Buffer { get; }
@@ -113,7 +174,7 @@ namespace Plywood.Graphics
         
         public PwSetInstanceBufferOffsetCommand(PwBuffer buffer, int offset)
         {
-            Buffer = buffer;
+            Buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             Offset = offset;
         }
         
@@ -121,8 +182,16 @@ namespace Plywood.Graphics
         {
             device.SetInstanceBufferOffset(Buffer, Offset);
         }
+        
+        public override bool IsValid()
+        {
+            return Offset >= 0 && Offset < Buffer.Size;
+        }
     }
     
+    /// <summary>
+    /// テクスチャ設定コマンド
+    /// </summary>
     public class PwSetTextureCommand : PwCommand
     {
         public PwTexture Texture { get; }
@@ -130,7 +199,7 @@ namespace Plywood.Graphics
         
         public PwSetTextureCommand(PwTexture texture, int bindingIndex)
         {
-            Texture = texture;
+            Texture = texture ?? throw new ArgumentNullException(nameof(texture));
             BindingIndex = bindingIndex;
         }
         
@@ -140,6 +209,9 @@ namespace Plywood.Graphics
         }
     }
     
+    /// <summary>
+    /// ユニフォームバッファ設定コマンド
+    /// </summary>
     public class PwSetUniformBufferCommand : PwCommand
     {
         public PwBuffer Buffer { get; }
@@ -147,7 +219,7 @@ namespace Plywood.Graphics
         
         public PwSetUniformBufferCommand(PwBuffer buffer, int bindingIndex)
         {
-            Buffer = buffer;
+            Buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             BindingIndex = bindingIndex;
         }
         
@@ -155,8 +227,16 @@ namespace Plywood.Graphics
         {
             device.SetUniformBuffer(Buffer, BindingIndex);
         }
+        
+        public override bool IsValid()
+        {
+            return Buffer.Usage == PwBufferUsage.Uniform;
+        }
     }
     
+    /// <summary>
+    /// インデックス付きインスタンス描画コマンド
+    /// </summary>
     public class PwDrawIndexedInstancedCommand : PwCommand
     {
         public int IndexCount { get; }
@@ -174,8 +254,16 @@ namespace Plywood.Graphics
         {
             device.DrawIndexedInstanced(IndexCount, InstanceCount, FirstIndex);
         }
+        
+        public override bool IsValid()
+        {
+            return IndexCount > 0 && InstanceCount > 0;
+        }
     }
     
+    /// <summary>
+    /// インスタンス描画コマンド
+    /// </summary>
     public class PwDrawInstancedCommand : PwCommand
     {
         public int VertexCount { get; }
@@ -193,15 +281,23 @@ namespace Plywood.Graphics
         {
             device.DrawInstanced(VertexCount, InstanceCount, FirstVertex);
         }
+        
+        public override bool IsValid()
+        {
+            return VertexCount > 0 && InstanceCount > 0;
+        }
     }
     
+    /// <summary>
+    /// フェンス待機コマンド
+    /// </summary>
     public class PwWaitFenceCommand : PwCommand
     {
         public PwFence Fence { get; }
         
         public PwWaitFenceCommand(PwFence fence)
         {
-            Fence = fence;
+            Fence = fence ?? throw new ArgumentNullException(nameof(fence));
         }
         
         public override void Execute(IPwGraphicsDevice device)
@@ -210,13 +306,16 @@ namespace Plywood.Graphics
         }
     }
     
+    /// <summary>
+    /// フェンスシグナルコマンド
+    /// </summary>
     public class PwSignalFenceCommand : PwCommand
     {
         public PwFence Fence { get; }
         
         public PwSignalFenceCommand(PwFence fence)
         {
-            Fence = fence;
+            Fence = fence ?? throw new ArgumentNullException(nameof(fence));
         }
         
         public override void Execute(IPwGraphicsDevice device)

@@ -131,13 +131,4 @@ namespace Plywood.Graphics
         public long CreatedFrame { get; set; }
         public long LastUsedFrame { get; set; }
     }
-    
-    [Flags]
-    public enum PwBufferFlags
-    {
-        None = 0,
-        Dynamic = 1,
-        Persistent = 2,
-        Coherent = 4
-    }
 }

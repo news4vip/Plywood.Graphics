@@ -44,7 +44,7 @@ namespace Plywood.Graphics.Sample
         private const int InstanceCount = 100;
         private const int ShadowMapSize = 1024;
         
-        protected override void Initialize()
+        protected override void OnInitialize()
         {
             // カメラ初期化
             camera = new PwCamera
@@ -245,7 +245,7 @@ namespace Plywood.Graphics.Sample
             }
         }
         
-        protected override void Update(float deltaTime)
+        protected override void OnUpdate(float deltaTime)
         {
             currentTime += deltaTime;
             
@@ -286,7 +286,7 @@ namespace Plywood.Graphics.Sample
             Device.UpdateBuffer(lightUniformBuffer, new[] { lightUniforms });
         }
         
-        protected override void Render(PwCommandEncoder encoder)
+        protected override void OnRender(PwCommandEncoder encoder)
         {
             // 縦持ち用ビューポート設定
             encoder.SetViewport(0, 0, 1080, 1920);
